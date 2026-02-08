@@ -1,6 +1,6 @@
-import { Box, Button, CircularProgress, Paper, TextField, Typography } from '@mui/material';
 import { Style } from '@mui/icons-material';
-import { useEffect, useState } from 'react';
+import { Box, Button, CircularProgress, Paper, TextField, Typography } from '@mui/material';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../context/SocketContext';
 
@@ -13,40 +13,21 @@ const Home = () => {
   const [inputRoomId, setInputRoomId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (!socket) return;
-
-    // EVENTO: Quando a sala é criada com sucesso (para o Criador)
-    socket.on('room_created', ({ roomId }) => {
-      setIsLoading(false);
-      navigate(`/room/${roomId}?type=T-shirt`);
-    });
-
-    // EVENTO: Quando o jogador entra com sucesso numa sala existente (para o Convidado)
-    socket.on('room_joined', ({ roomId }) => {
-      setIsLoading(false);
-      navigate(`/room/${roomId}?type=T-shirt`);
-    });
-
-    // EVENTO: Trata erros (ex: sala não existe)
-    socket.on('error', (message: string) => {
-      setIsLoading(false);
-      alert(message);
-    });
-
-    // Limpeza dos ouvintes ao desmontar o componente
-    return () => {
-      socket.off('room_created');
-      socket.off('room_joined');
-      socket.off('error');
-    };
-  }, [socket, navigate]);
-
   const handleCreateRoom = () => {
     if (socket && isConnected) {
       setIsLoading(true);
       localStorage.setItem('playerName', playerName);
-      socket.emit('create_room', { playerName, roomType: 'T-shirt' });
+
+      socket.emit('create_room', { playerName, roomType: 'T-shirt' }, (response: any) => {
+        if (response && response.success) {
+          setIsLoading(false);
+
+          navigate(`/room/${response.roomId}?type=T-shirt`);
+        } else {
+          setIsLoading(false);
+          alert('Erro ao criar sala. Tente novamente.');
+        }
+      });
     }
   };
 
@@ -54,10 +35,23 @@ const Home = () => {
     if (socket && isConnected && inputRoomId.trim()) {
       setIsLoading(true);
       localStorage.setItem('playerName', playerName);
-      socket.emit('join_room', {
-        playerName,
-        roomId: inputRoomId.toUpperCase(),
-      });
+
+      socket.emit(
+        'join_room',
+        {
+          playerName,
+          roomId: inputRoomId.toUpperCase(),
+        },
+        (response: any) => {
+          if (response.error) {
+            setIsLoading(false);
+            alert(response.error);
+          } else if (response.success) {
+            setIsLoading(false);
+            navigate(`/room/${response.roomId}?type=${response.roomType || 'T-shirt'}`);
+          }
+        },
+      );
     }
   };
 
