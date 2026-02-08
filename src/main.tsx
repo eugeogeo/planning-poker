@@ -1,12 +1,12 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom'; // Importe isso
 import App from './App';
+import { SocketProvider } from './context/SocketContext';
+import { createRoot } from 'react-dom/client';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <BrowserRouter>
+createRoot(document.getElementById('root')!).render(
+  <BrowserRouter>
+    <SocketProvider>
       <App />
-    </BrowserRouter>
-  </React.StrictMode>,
+    </SocketProvider>
+  </BrowserRouter>,
 );

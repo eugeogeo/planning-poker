@@ -1,47 +1,65 @@
-import { Box, Button, Grid, Paper, TextField, Typography } from '@mui/material';
-import GridOnIcon from '@mui/icons-material/GridOn';
-import { useEffect, useState } from 'react';
-import { io, type Socket } from 'socket.io-client';
+import { Box, Button, CircularProgress, Paper, TextField, Typography } from '@mui/material';
 import { Style } from '@mui/icons-material';
-
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSocket } from '../../context/SocketContext';
 
 const Home = () => {
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [inputRoomId, setInputRoomId] = useState(''); // Para o campo de texto "Entrar na Sala"
-  const [playerNames, setPlayerNames] = useState({ A: 'Jogador A', B: 'Jogador B' });
+  const navigate = useNavigate();
+  const { socket, isConnected } = useSocket();
 
-  const handleCreateRoom = (size: string) => {};
-  const handleJoinRoom = () => {};
+  // Estados do formulário
+  const [playerName, setPlayerName] = useState('Jogador');
+  const [inputRoomId, setInputRoomId] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // --- EFEITO: CONEXÃO COM SOCKET ---
   useEffect(() => {
-    //  Criar a conexão
-    const newSocket = io(SOCKET_URL, {
-      transports: ['websocket'],
+    if (!socket) return;
+
+    // EVENTO: Quando a sala é criada com sucesso (para o Criador)
+    socket.on('room_created', ({ roomId }) => {
+      setIsLoading(false);
+      navigate(`/room/${roomId}?type=T-shirt`);
     });
 
-    setSocket(newSocket);
-
-    //  Configurar ouvintes
-    newSocket.on('connect', () => {
-      console.log('Conectado com ID:', newSocket.id);
-      setIsConnected(true);
+    // EVENTO: Quando o jogador entra com sucesso numa sala existente (para o Convidado)
+    socket.on('room_joined', ({ roomId }) => {
+      setIsLoading(false);
+      navigate(`/room/${roomId}?type=T-shirt`);
     });
 
-    newSocket.on('disconnect', () => {
-      console.log('Desconectado');
-      setIsConnected(false);
+    // EVENTO: Trata erros (ex: sala não existe)
+    socket.on('error', (message: string) => {
+      setIsLoading(false);
+      alert(message);
     });
 
-    //  FUNÇÃO DE LIMPEZA
+    // Limpeza dos ouvintes ao desmontar o componente
     return () => {
-      newSocket.off('connect');
-      newSocket.off('disconnect');
-      newSocket.disconnect();
+      socket.off('room_created');
+      socket.off('room_joined');
+      socket.off('error');
     };
-  }, []);
+  }, [socket, navigate]);
+
+  const handleCreateRoom = () => {
+    if (socket && isConnected) {
+      setIsLoading(true);
+      localStorage.setItem('playerName', playerName);
+      socket.emit('create_room', { playerName, roomType: 'T-shirt' });
+    }
+  };
+
+  const handleJoinRoom = () => {
+    if (socket && isConnected && inputRoomId.trim()) {
+      setIsLoading(true);
+      localStorage.setItem('playerName', playerName);
+      socket.emit('join_room', {
+        playerName,
+        roomId: inputRoomId.toUpperCase(),
+      });
+    }
+  };
 
   return (
     <Box
@@ -70,62 +88,51 @@ const Home = () => {
           gap={1}
         >
           <Style sx={{ fontSize: 40, color: 'black' }} />
-          Planning poker
+          Planning Poker
         </Typography>
 
         <Typography
           color={isConnected ? 'success.main' : 'error.main'}
           sx={{ mb: 3, fontWeight: 'bold' }}
         >
-          {isConnected ? '🟢 Conectado ao Servidor' : '🔴 Desconectado...'}
+          {isConnected ? '🟢 Ligado ao Servidor' : '🔴 Desligado...'}
         </Typography>
 
-        {/* Formulário de Criação / Entrada */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* CRIAR SALA */}
+          {/* SECÇÃO: CRIAR SALA */}
           <Box sx={{ border: '1px solid #ddd', p: 2, borderRadius: 2 }}>
             <Typography variant="h6" gutterBottom>
               Criar Nova Sala
             </Typography>
             <TextField
-              label="Seu Nome"
+              label="Teu Nome"
               size="small"
               fullWidth
               sx={{ mb: 2 }}
-              value={playerNames.A}
-              onChange={(e) => setPlayerNames((prev) => ({ ...prev, A: e.target.value }))}
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              disabled={isLoading}
             />
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              Escolha o tipo de sala:
-            </Typography>
-            <Grid container spacing={1} justifyContent="center">
-              {['Tshird size'].map((size) => (
-                <Grid key={size}>
-                  <Button variant="outlined" onClick={() => handleCreateRoom(size)}>
-                    {size}
-                  </Button>
-                </Grid>
-              ))}
-            </Grid>
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={handleCreateRoom}
+              disabled={isLoading || !isConnected}
+              startIcon={isLoading && <CircularProgress size={20} color="inherit" />}
+            >
+              {isLoading ? 'A criar...' : 'Criar Sala T-Shirt'}
+            </Button>
           </Box>
 
           <Typography variant="body1" color="text.secondary">
             - OU -
           </Typography>
 
-          {/* ENTRAR EM SALA */}
+          {/* SECÇÃO: ENTRAR EM SALA */}
           <Box sx={{ border: '1px solid #ddd', p: 2, borderRadius: 2, bgcolor: '#fafafa' }}>
             <Typography variant="h6" gutterBottom>
               Entrar em Sala
             </Typography>
-            <TextField
-              label="Seu Nome"
-              size="small"
-              fullWidth
-              sx={{ mb: 2 }}
-              value={playerNames.B}
-              onChange={(e) => setPlayerNames((prev) => ({ ...prev, B: e.target.value }))}
-            />
             <Box sx={{ display: 'flex', gap: 1 }}>
               <TextField
                 label="ID da Sala (ex: A1B2)"
@@ -133,9 +140,14 @@ const Home = () => {
                 fullWidth
                 value={inputRoomId}
                 onChange={(e) => setInputRoomId(e.target.value.toUpperCase())}
+                disabled={isLoading}
               />
-              <Button variant="contained" onClick={handleJoinRoom} disabled={!inputRoomId}>
-                Entrar
+              <Button
+                variant="contained"
+                onClick={handleJoinRoom}
+                disabled={!inputRoomId || isLoading || !isConnected}
+              >
+                {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Entrar'}
               </Button>
             </Box>
           </Box>
