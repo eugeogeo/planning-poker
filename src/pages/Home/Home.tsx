@@ -2,6 +2,7 @@ import { Box, Button, Grid, Paper, TextField, Typography } from '@mui/material';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import { useEffect, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { Style } from '@mui/icons-material';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -59,8 +60,16 @@ const Home = () => {
         elevation={4}
         sx={{ p: 5, borderRadius: 3, textAlign: 'center', maxWidth: 500, width: '100%' }}
       >
-        <GridOnIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
+        <Typography
+          display="flex"
+          variant="h4"
+          fontWeight="bold"
+          gutterBottom
+          alignItems="center"
+          justifyContent="center"
+          gap={1}
+        >
+          <Style sx={{ fontSize: 40, color: 'black' }} />
           Planning poker
         </Typography>
 
