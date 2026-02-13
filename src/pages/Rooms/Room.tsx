@@ -8,6 +8,13 @@ import MenuEmoji from './components/MenuEmoji';
 import CardPlayer from './components/CardPlayer';
 import ServerConnect from '../../components/ServerConnect';
 import type { Player, RoomData, ActiveReaction } from '../../@types/general';
+import {
+  emitVote,
+  joinRoom,
+  receiveReaction,
+  sendReaction,
+  updateRoom,
+} from '../../services/socket';
 
 const Room = () => {
   const { roomId } = useParams();
@@ -25,12 +32,9 @@ const Room = () => {
   useEffect(() => {
     if (isConnected && roomId) {
       const playerName = localStorage.getItem('playerName') || 'Jogador Anônimo';
-      socket.emit('join_room', {
-        playerName,
-        roomId: roomId.toUpperCase(),
-      });
+      joinRoom({ inputRoomId: roomId, playerName });
     }
-  }, [isConnected, roomId, socket]);
+  }, [isConnected, roomId]);
 
   useEffect(() => {
     const handleRoomUpdate = (data: RoomData) => {
@@ -53,18 +57,18 @@ const Room = () => {
       }, 2000);
     };
 
-    socket.on('room_updated', handleRoomUpdate);
-    socket.on('receive_reaction', handleReceiveReaction);
+    updateRoom({ handleRoomUpdate });
+    receiveReaction({ handleReceiveReaction });
 
     return () => {
-      socket.off('room_updated', handleRoomUpdate);
-      socket.off('receive_reaction', handleReceiveReaction);
+      updateRoom({ handleRoomUpdate });
+      receiveReaction({ handleReceiveReaction });
     };
-  }, [socket]);
+  }, []);
 
   const sendVote = (vote: string) => {
-    if (!roomData?.showVotes) {
-      socket.emit('vote', { roomId, vote });
+    if (!roomData?.showVotes && roomId) {
+      emitVote({ roomId: roomId, vote });
     }
   };
 
@@ -83,8 +87,8 @@ const Room = () => {
   };
 
   const handleSendReaction = (emoji: string) => {
-    if (selectedPlayerId) {
-      socket.emit('send_reaction', { roomId, targetPlayerId: selectedPlayerId, emoji });
+    if (selectedPlayerId && roomId) {
+      sendReaction({ roomId, targetPlayerId: selectedPlayerId, emoji });
     }
 
     handleClosePopover();
@@ -131,9 +135,7 @@ const Room = () => {
 
       {!showVotes && !!myPlayer && <ContainerVotacao sendVote={sendVote} myPlayer={myPlayer} />}
 
-      {isAdmin && roomId && (
-        <AdminArea showVotes={showVotes} allVoted={allVoted} socket={socket} roomId={roomId} />
-      )}
+      {isAdmin && roomId && <AdminArea showVotes={showVotes} allVoted={allVoted} roomId={roomId} />}
     </Box>
   );
 };

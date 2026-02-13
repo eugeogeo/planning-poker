@@ -17,3 +17,10 @@ export interface ActiveReaction {
   playerId: string;
   emoji: string;
 }
+
+export interface RoomResponse {
+  success?: boolean;
+  roomId?: string;
+  roomType?: string;
+  error?: string;
+}

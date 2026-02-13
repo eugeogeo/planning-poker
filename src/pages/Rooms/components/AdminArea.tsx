@@ -1,13 +1,8 @@
 import { Box, Button, Paper, Typography } from '@mui/material';
-import type { Socket } from 'socket.io-client';
+import { sendRevealCards, sendStartNewRound } from '../../../services/socket';
 
-const AdminArea = (data: {
-  showVotes: boolean;
-  allVoted: boolean;
-  socket: Socket;
-  roomId: string;
-}) => {
-  const { showVotes, allVoted, socket, roomId } = data;
+const AdminArea = (data: { showVotes: boolean; allVoted: boolean; roomId: string }) => {
+  const { showVotes, allVoted, roomId } = data;
 
   return (
     <Paper
@@ -31,18 +26,14 @@ const AdminArea = (data: {
             variant="contained"
             color="warning"
             disabled={!allVoted}
-            onClick={() => socket.emit('reveal_cards', { roomId })}
+            onClick={() => sendRevealCards(roomId)}
           >
             {allVoted ? '👁️ Revelar Cartas' : 'Aguardando Votos...'}
           </Button>
         )}
 
         {showVotes && (
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => socket.emit('start_new_round', { roomId })}
-          >
+          <Button variant="contained" color="primary" onClick={() => sendStartNewRound(roomId)}>
             🔄 Nova Rodada
           </Button>
         )}
