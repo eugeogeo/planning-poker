@@ -1,22 +1,30 @@
-import { Box, Button, Grid, Paper, Typography } from '@mui/material';
+import { Box, Grid, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSocket } from '../../context/SocketContext';
-
-const TSHIRT_SIZES = ['PP', 'P', 'M', 'G', 'GG', '?'];
+import AdminArea from './components/AdminArea';
+import ContainerVotacao from './components/ContainerVotacao';
+import MenuEmoji from './components/MenuEmoji';
+import CardPlayer from './components/CardPlayer';
+import ServerConnect from '../../components/ServerConnect';
+import type { Player, RoomData, ActiveReaction } from '../../@types/general';
 
 const Room = () => {
   const { roomId } = useParams();
   const { socket, isConnected } = useSocket();
 
-  const [players, setPlayers] = useState<any[]>([]);
-  const [roomData, setRoomData] = useState<any>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [roomData, setRoomData] = useState<RoomData | null>(null);
 
-  // Efeito para entrar na sala ao carregar (em caso de refresh)
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+
+  // Estado para armazenar as reações que estão acontecendo na tela
+  const [activeReactions, setActiveReactions] = useState<ActiveReaction[]>([]);
+
   useEffect(() => {
     if (isConnected && roomId) {
       const playerName = localStorage.getItem('playerName') || 'Jogador Anônimo';
-
       socket.emit('join_room', {
         playerName,
         roomId: roomId.toUpperCase(),
@@ -24,17 +32,33 @@ const Room = () => {
     }
   }, [isConnected, roomId, socket]);
 
-  // Ouvir atualizações da sala
   useEffect(() => {
-    const handleRoomUpdate = (data: any) => {
+    const handleRoomUpdate = (data: RoomData) => {
       setPlayers(data.players);
       setRoomData(data);
     };
 
+    // Escuta quando alguém envia uma reação
+    const handleReceiveReaction = (data: { targetPlayerId: string; emoji: string }) => {
+      const reactionId = Math.random().toString(36).substring(7); // ID único para a animação
+
+      setActiveReactions((prev) => [
+        ...prev,
+        { id: reactionId, playerId: data.targetPlayerId, emoji: data.emoji },
+      ]);
+
+      // Remove a reação do estado após a animação terminar (2 segundos)
+      setTimeout(() => {
+        setActiveReactions((prev) => prev.filter((r) => r.id !== reactionId));
+      }, 2000);
+    };
+
     socket.on('room_updated', handleRoomUpdate);
+    socket.on('receive_reaction', handleReceiveReaction);
 
     return () => {
       socket.off('room_updated', handleRoomUpdate);
+      socket.off('receive_reaction', handleReceiveReaction);
     };
   }, [socket]);
 
@@ -44,22 +68,35 @@ const Room = () => {
     }
   };
 
-  // --- LÓGICA DE VISUALIZAÇÃO ---
+  // --- LÓGICA DE REAÇÃO (EMOJIS) ---
+  const handleCardClick = (event: React.MouseEvent<HTMLElement>, playerId: string) => {
+    // Só abre o popover se o card não for do próprio usuário logado
+    if (playerId !== socket.id) {
+      setAnchorEl(event.currentTarget);
+      setSelectedPlayerId(playerId);
+    }
+  };
+
+  const handleClosePopover = () => {
+    setAnchorEl(null);
+    setSelectedPlayerId(null);
+  };
+
+  const handleSendReaction = (emoji: string) => {
+    if (selectedPlayerId) {
+      socket.emit('send_reaction', { roomId, targetPlayerId: selectedPlayerId, emoji });
+    }
+
+    handleClosePopover();
+  };
+
   const isAdmin = roomData?.adminId === socket.id;
   const showVotes = roomData?.showVotes || false;
-
-  // Verifica se todos os jogadores na sala já votaram
   const allVoted = players.length > 0 && players.every((p) => p.vote !== null);
 
-  const getCardContent = (player: any) => {
-    if (!player.vote) return '?';
+  const isPopoverOpen = Boolean(anchorEl);
 
-    if (showVotes) return player.vote;
-
-    if (player.id === socket.id) return player.vote;
-
-    return '✓';
-  };
+  const myPlayer = players.find((p) => p.id === socket.id);
 
   return (
     <Box sx={{ p: 4, textAlign: 'center' }}>
@@ -67,114 +104,35 @@ const Room = () => {
         Sala: {roomId} {isAdmin && '👑'}
       </Typography>
 
-      <Typography
-        color={isConnected ? 'success.main' : 'error.main'}
-        sx={{
-          mb: 2,
-          fontWeight: 'bold',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 1,
-        }}
-      >
-        {isConnected ? '🟢 Ligado ao Servidor' : '🔴 Desligado...'}
-      </Typography>
+      <ServerConnect isConnected={isConnected} />
 
       {/* Grid de Jogadores */}
       <Grid container spacing={2} justifyContent="center" sx={{ mb: 6 }}>
         {players.map((p) => (
-          <Grid key={p.id}>
-            <Typography variant="caption" display="block">
-              {p.name} {p.id === socket.id ? '(Você)' : ''}
-              {roomData?.adminId === p.id && ' 👑'}
-            </Typography>
-            <Paper
-              elevation={3}
-              sx={{
-                width: 60,
-                height: 90,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: p.vote ? (showVotes ? '#2196f3' : '#4caf50') : '#eee',
-                color: p.vote ? 'white' : 'black',
-                transition: 'all 0.3s ease',
-              }}
-            >
-              <Typography variant="h5" fontWeight="bold">
-                {getCardContent(p)}
-              </Typography>
-            </Paper>
-          </Grid>
+          <CardPlayer
+            key={p.id}
+            showVotes={showVotes}
+            socket={socket}
+            activeReactions={activeReactions}
+            handleCardClick={handleCardClick}
+            player={p}
+            roomData={roomData}
+          />
         ))}
       </Grid>
 
-      {!showVotes && (
-        <>
-          <Typography variant="h6" gutterBottom>
-            Escolha o tamanho:
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap', mb: 4 }}>
-            {TSHIRT_SIZES.map((size) => (
-              <Button
-                key={size}
-                variant="contained"
-                onClick={() => sendVote(size)}
-                sx={{ width: 60, height: 80 }}
-                color={
-                  players.find((p) => p.id === socket.id)?.vote === size ? 'secondary' : 'primary'
-                }
-              >
-                {size}
-              </Button>
-            ))}
-          </Box>
-        </>
-      )}
+      {/* Popover (Menu de Emojis) */}
+      <MenuEmoji
+        handleClosePopover={handleClosePopover}
+        handleSendReaction={handleSendReaction}
+        isPopoverOpen={isPopoverOpen}
+        anchorEl={anchorEl}
+      />
 
-      {/* --- ÁREA DO ADMIN --- */}
-      {isAdmin && (
-        <Paper
-          variant="outlined"
-          sx={{
-            p: 2,
-            mt: 4,
-            maxWidth: 400,
-            mx: 'auto',
-            bgcolor: '#fff3e0',
-            borderColor: '#ffb74d',
-          }}
-        >
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold', color: '#e65100' }}>
-            Painel do Admin
-          </Typography>
+      {!showVotes && !!myPlayer && <ContainerVotacao sendVote={sendVote} myPlayer={myPlayer} />}
 
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-            {/* Botão Revelar: Só aparece se todos votaram e ainda está escondido */}
-            {!showVotes && (
-              <Button
-                variant="contained"
-                color="warning"
-                disabled={!allVoted}
-                onClick={() => socket.emit('reveal_cards', { roomId })}
-              >
-                {allVoted ? '👁️ Revelar Cartas' : 'Aguardando Votos...'}
-              </Button>
-            )}
-
-            {/* Botão Nova Rodada: Só aparece quando está revelado */}
-            {showVotes && (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => socket.emit('start_new_round', { roomId })}
-              >
-                🔄 Nova Rodada
-              </Button>
-            )}
-          </Box>
-        </Paper>
+      {isAdmin && roomId && (
+        <AdminArea showVotes={showVotes} allVoted={allVoted} socket={socket} roomId={roomId} />
       )}
     </Box>
   );
