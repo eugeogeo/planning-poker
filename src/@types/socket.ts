@@ -5,6 +5,7 @@ export type CreateRoom = {
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   setErrorMsg: React.Dispatch<React.SetStateAction<string>>;
   navigate: (path: string) => void;
+  isSpectator?: boolean;
 };
 
 export type JoinRoom = {
@@ -13,6 +14,7 @@ export type JoinRoom = {
   setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
   setErrorMsg?: React.Dispatch<React.SetStateAction<string>>;
   navigate?: (path: string) => void;
+  isSpectator?: boolean;
 };
 
 export type UpdateRoom = { handleRoomUpdate: (data: RoomData) => void };

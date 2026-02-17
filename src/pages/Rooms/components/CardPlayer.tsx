@@ -1,47 +1,26 @@
-import { Box, keyframes, Paper, Typography } from '@mui/material';
-import type { Socket } from 'socket.io-client';
-import type { ActiveReaction, Player, RoomData } from '../../../@types/general';
+import { Box, Typography, IconButton } from '@mui/material';
+import { Visibility, AddReaction } from '@mui/icons-material';
+import type { ActiveReaction, Player } from '../../../@types/general';
 import { CARD_COLORS } from '../../../@types/enum';
 
-const CardPlayer = (data: {
-  showVotes: boolean;
-  socket: Socket;
-  activeReactions: ActiveReaction[];
+interface CardPlayerProps {
   player: Player;
-  roomData: RoomData | null;
+  showVotes: boolean;
+  activeReactions: ActiveReaction[];
   handleCardClick: (event: React.MouseEvent<HTMLElement>, playerId: string) => void;
-}) => {
-  const { showVotes, socket, activeReactions, handleCardClick, player, roomData } = data;
+  isMe?: boolean;
+}
 
-  const { name, id, vote } = player;
+const CardPlayer = ({
+  player,
+  showVotes,
+  activeReactions,
+  handleCardClick,
+  isMe = false,
+}: CardPlayerProps) => {
+  const currentReactions = activeReactions.filter((r) => r.playerId === player.id);
 
-  const fallAnimation = keyframes`
-    0% { transform: translateY(-40px) scale(0.5); opacity: 0; }
-    20% { transform: translateY(-10px) scale(1.5); opacity: 1; }
-    80% { transform: translateY(20px) scale(1); opacity: 1; }
-    100% { transform: translateY(40px) scale(0.5); opacity: 0; }
-  `;
-
-  const isAdmin = roomData?.adminId === id;
-  const isMe = id === socket.id;
-  const hasVoted = !!vote;
-
-  const getCardBackground = () => {
-    if (showVotes && hasVoted) {
-      return CARD_COLORS[vote as keyof typeof CARD_COLORS] || '#eceff1';
-    }
-
-    if (hasVoted) return '#1565c0';
-    return 'rgba(255, 255, 255, 0.05)';
-  };
-
-  const getTextColor = () => {
-    if (showVotes && hasVoted) return '#000';
-    return '#fff';
-  };
-
-  const cardBg = getCardBackground();
-  const textColor = getTextColor();
+  const hasVoted = player.vote !== null;
 
   return (
     <Box
@@ -50,72 +29,91 @@ const CardPlayer = (data: {
         flexDirection: 'column',
         alignItems: 'center',
         position: 'relative',
-        mx: 1,
+        gap: 1,
       }}
     >
-      <Box
-        sx={{
-          bgcolor: 'rgba(0,0,0,0.7)',
-          px: 1.5,
-          py: 0.5,
-          borderRadius: 4,
-          mb: 1,
-          border: isAdmin ? '1px solid #ffd700' : '1px solid transparent',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.5,
-        }}
-      >
-        <Typography variant="caption" sx={{ color: 'white', fontWeight: 'bold' }}>
-          {isAdmin && '👑'} {name} {isMe && '(Você)'}
+      {currentReactions.map((reaction) => (
+        <Typography
+          key={reaction.id}
+          sx={{
+            position: 'absolute',
+            top: -40,
+            fontSize: '2rem',
+            animation: 'floatUp 2s ease-out forwards',
+            zIndex: 10,
+            '@keyframes floatUp': {
+              '0%': { transform: 'translateY(0) scale(1)', opacity: 1 },
+              '100%': { transform: 'translateY(-100px) scale(1.5)', opacity: 0 },
+            },
+          }}
+        >
+          {reaction.emoji}
         </Typography>
-      </Box>
+      ))}
 
-      {/* A CARTA */}
-      <Paper
-        elevation={hasVoted ? 8 : 0}
-        onClick={(e) => handleCardClick(e, id)}
+      <Box
+        onClick={(e) => !isMe && handleCardClick(e, player.id)}
         sx={{
-          width: 60,
-          height: 90,
+          width: 80,
+          height: 110,
+          borderRadius: 2,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          bgcolor: cardBg,
-          color: textColor,
-          borderRadius: 2,
-          border: hasVoted ? '2px solid white' : '2px dashed rgba(255,255,255,0.2)',
-          transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-          cursor: !isMe ? 'pointer' : 'default',
-          transform: isMe ? 'scale(1.1)' : 'scale(1)',
-
-          '&:hover': !isMe ? { transform: 'translateY(-8px) scale(1.05)' } : {},
+          cursor: isMe ? 'default' : 'pointer',
+          transition: 'all 0.3s ease',
+          position: 'relative',
+          bgcolor: player.isSpectator
+            ? 'rgba(255,255,255,0.1)'
+            : showVotes && hasVoted
+              ? CARD_COLORS[player.vote as keyof typeof CARD_COLORS]
+              : '#2c3e50',
+          border: `2px solid ${isMe ? '#3498db' : 'rgba(255,255,255,0.2)'}`,
+          boxShadow: hasVoted && !showVotes ? '0 0 15px #2ecc71' : 'none',
+          '&:hover': {
+            transform: !isMe ? 'translateY(-5px)' : 'none',
+            borderColor: !isMe ? '#f1c40f' : '',
+          },
         }}
       >
-        <Typography variant="h5" fontWeight="900">
-          {showVotes && vote}
-          {!showVotes && hasVoted && (isMe ? vote : '♠')}{' '}
-        </Typography>
-      </Paper>
+        {player.isSpectator ? (
+          <Visibility sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 30 }} />
+        ) : (
+          <Typography variant="h5" fontWeight="bold" sx={{ color: '#fff' }}>
+            {showVotes ? player.vote || '?' : hasVoted ? '✓' : ''}
+          </Typography>
+        )}
 
-      {activeReactions
-        .filter((r) => r.playerId === id)
-        .map((r) => (
-          <Typography
-            key={r.id}
+        {!isMe && (
+          <IconButton
+            size="small"
             sx={{
               position: 'absolute',
-              top: '-30px',
-              fontSize: '2.5rem',
-              pointerEvents: 'none',
-              zIndex: 20,
-              textShadow: '0 4px 10px rgba(0,0,0,0.5)',
-              animation: `${fallAnimation} 2s ease-in-out forwards`,
+              bottom: -10,
+              right: -10,
+              bgcolor: '#f1c40f',
+              '&:hover': { bgcolor: '#d4ac0d' },
             }}
           >
-            {r.emoji}
-          </Typography>
-        ))}
+            <AddReaction sx={{ fontSize: 16, color: '#000' }} />
+          </IconButton>
+        )}
+      </Box>
+
+      <Typography
+        variant="caption"
+        sx={{
+          color: isMe ? '#3498db' : 'white',
+          fontWeight: isMe ? 'bold' : 'normal',
+          textAlign: 'center',
+          maxWidth: 90,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {player.name} {isMe && '(Eu)'}
+      </Typography>
     </Box>
   );
 };

@@ -1,27 +1,32 @@
 import { Box, IconButton, Popover, Typography } from '@mui/material';
 
-const MenuEmoji = (data: {
-  isPopoverOpen: boolean;
+interface MenuEmojiProps {
   anchorEl: HTMLElement | null;
-  handleClosePopover: () => void;
-  handleSendReaction: (emoji: string) => void;
-}) => {
+  onClose: () => void;
+  onSelectEmoji: (emoji: string) => void;
+}
+
+const MenuEmoji = ({ anchorEl, onClose, onSelectEmoji }: MenuEmojiProps) => {
   const EMOJIS = ['👍', '💩', '😂', '🚀'];
 
-  const { isPopoverOpen, anchorEl, handleClosePopover, handleSendReaction } = data;
+  const isOpen = Boolean(anchorEl);
 
   return (
     <Popover
-      open={isPopoverOpen}
+      open={isOpen}
       anchorEl={anchorEl}
-      onClose={handleClosePopover}
+      onClose={onClose}
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      slotProps={{ paper: { sx: { borderRadius: 4, px: 1, py: 0.5, mb: 1 } } }}
+      slotProps={{
+        paper: {
+          sx: { borderRadius: 4, px: 1, py: 0.5, mb: 1, bgcolor: 'rgba(255,255,255,0.9)' },
+        },
+      }}
     >
       <Box sx={{ display: 'flex', gap: 1 }}>
         {EMOJIS.map((emoji) => (
-          <IconButton key={emoji} onClick={() => handleSendReaction(emoji)} size="small">
+          <IconButton key={emoji} onClick={() => onSelectEmoji(emoji)} size="small">
             <Typography variant="h6">{emoji}</Typography>
           </IconButton>
         ))}

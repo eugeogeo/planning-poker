@@ -1,4 +1,4 @@
-import { Style, AddCircleOutline, Login } from '@mui/icons-material';
+import { Style } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -9,6 +9,8 @@ import {
   Divider,
   Alert,
   Collapse,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -22,8 +24,8 @@ const Home = () => {
 
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
   const [inputRoomId, setInputRoomId] = useState('');
+  const [isSpectator, setIsSpectator] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleCreateRoom = () => {
@@ -31,13 +33,11 @@ const Home = () => {
       setErrorMsg('Por favor, introduz o teu nome antes de criar a sala.');
       return;
     }
-
     if (socket && isConnected) {
       setErrorMsg('');
       setIsLoading(true);
       localStorage.setItem('playerName', playerName.trim());
-
-      createRoom({ playerName, setIsLoading, setErrorMsg, navigate });
+      createRoom({ playerName, isSpectator, setIsLoading, setErrorMsg, navigate });
     }
   };
 
@@ -46,20 +46,16 @@ const Home = () => {
       setErrorMsg('Por favor, introduz o teu nome antes de entrar na sala.');
       return;
     }
-
     if (socket && isConnected && inputRoomId.trim()) {
       setErrorMsg('');
       setIsLoading(true);
       localStorage.setItem('playerName', playerName.trim());
-
-      joinRoom({ playerName, inputRoomId, setIsLoading, setErrorMsg, navigate });
+      joinRoom({ playerName, inputRoomId, isSpectator, setIsLoading, setErrorMsg, navigate });
     }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' && inputRoomId.trim() && playerName.trim()) {
-      handleJoinRoom();
-    }
+    if (e.key === 'Enter' && inputRoomId.trim() && playerName.trim()) handleJoinRoom();
   };
 
   return (
@@ -93,39 +89,45 @@ const Home = () => {
           justifyContent="center"
           gap={1}
         >
-          <Style sx={{ fontSize: 40, color: 'text.primary' }} />
-          Planning Poker
+          <Style sx={{ fontSize: 40, color: 'text.primary' }} /> Planning Poker
         </Typography>
 
         <ServerConnect isConnected={isConnected} />
 
-        {/* Mensagem de Erro UI Friendly */}
         <Collapse in={!!errorMsg}>
           <Alert severity="error" sx={{ mb: 3, textAlign: 'left' }} onClose={() => setErrorMsg('')}>
             {errorMsg}
           </Alert>
         </Collapse>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <Box sx={{ textAlign: 'left' }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ ml: 1 }}>
-              Nome{' '}
-            </Typography>
-            <TextField
-              placeholder="O teu nome..."
-              size="medium"
-              fullWidth
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              disabled={isLoading}
-            />
-          </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            label="Nome"
+            fullWidth
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            disabled={isLoading}
+          />
 
-          {/* SECÇÃO: ENTRAR EM SALA */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isSpectator}
+                onChange={(e) => setIsSpectator(e.target.checked)}
+                color="primary"
+              />
+            }
+            label={
+              <Typography variant="body2" color="text.secondary">
+                Entrar como Espectador (apenas observar)
+              </Typography>
+            }
+            sx={{ ml: 0 }}
+          />
+
           <Box sx={{ display: 'flex', gap: 1 }}>
             <TextField
-              label="ID da Sala (ex: A1B2)"
-              size="medium"
+              label="ID da Sala"
               fullWidth
               value={inputRoomId}
               onChange={(e) => setInputRoomId(e.target.value.toUpperCase())}
@@ -134,33 +136,20 @@ const Home = () => {
             />
             <Button
               variant="outlined"
-              color="primary"
               onClick={handleJoinRoom}
               disabled={!inputRoomId.trim() || isLoading || !isConnected || !playerName.trim()}
-              sx={{ px: { xs: 2, sm: 4 }, fontWeight: 'bold' }}
-              endIcon={!isLoading && <Login />}
             >
-              {isLoading && inputRoomId ? <CircularProgress size={24} color="inherit" /> : 'Entrar'}
+              {isLoading && inputRoomId ? <CircularProgress size={24} /> : 'Entrar'}
             </Button>
           </Box>
 
-          {/* DIVISOR */}
-          <Divider sx={{ color: 'text.secondary', fontSize: '0.875rem', fontWeight: 500 }}>
-            OU CRIAR UMA SALA
-          </Divider>
+          <Divider sx={{ my: 1 }}>OU</Divider>
 
-          {/* SECÇÃO: CRIAR SALA */}
           <Button
             variant="contained"
-            color="primary"
-            size="large"
             fullWidth
             onClick={handleCreateRoom}
             disabled={isLoading || !isConnected || !playerName.trim()}
-            startIcon={
-              isLoading ? <CircularProgress size={20} color="inherit" /> : <AddCircleOutline />
-            }
-            sx={{ py: 1.5, fontWeight: 'bold' }}
           >
             {isLoading && !inputRoomId ? 'Criando...' : 'Criar Nova Sala'}
           </Button>

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSocket } from '../../context/SocketContext';
 import AdminArea from './components/AdminArea';
-import AdminControls from './components/AdminControls'; // <--- Importe o novo componente
+import AdminControls from './components/AdminControls';
 import ContainerVotacao from './components/ContainerVotacao';
 import MenuEmoji from './components/MenuEmoji';
 import CardPlayer from './components/CardPlayer';
@@ -68,7 +68,6 @@ const Room = () => {
     }
   };
 
-  // --- LÓGICA DE REAÇÃO (EMOJIS) ---
   const handleCardClick = (event: React.MouseEvent<HTMLElement>, playerId: string) => {
     if (playerId !== socket.id) {
       setAnchorEl(event.currentTarget);
@@ -76,23 +75,19 @@ const Room = () => {
     }
   };
 
-  const handleClosePopover = () => {
-    setAnchorEl(null);
-    setSelectedPlayerId(null);
-  };
-
   const handleSendReaction = (emoji: string) => {
     if (selectedPlayerId && roomId) {
       sendReaction({ roomId, targetPlayerId: selectedPlayerId, emoji });
     }
-    handleClosePopover();
+    setAnchorEl(null);
+    setSelectedPlayerId(null);
   };
 
   const isAdmin = roomData?.adminId === socket.id;
   const showVotes = roomData?.showVotes || false;
-  const allVoted = players.length > 0 && players.every((p) => p.vote !== null);
 
-  const isPopoverOpen = Boolean(anchorEl);
+  const votingPlayers = players.filter((p) => !p.isSpectator);
+  const allVoted = votingPlayers.length > 0 && votingPlayers.every((p) => p.vote !== null);
 
   const myPlayer = players.find((p) => p.id === socket.id);
   const otherPlayers = players.filter((p) => p.id !== socket.id);
@@ -152,11 +147,9 @@ const Room = () => {
             <CardPlayer
               key={p.id}
               showVotes={showVotes}
-              socket={socket}
               activeReactions={activeReactions}
               handleCardClick={handleCardClick}
               player={p}
-              roomData={roomData}
             />
           ))}
         </Box>
@@ -179,7 +172,9 @@ const Room = () => {
         >
           <Box sx={{ textAlign: 'center', opacity: showVotes ? 1 : 0.6 }}>
             {showVotes ? (
-              <VotesPieChart votes={players.map((p) => p.vote).filter((v) => !!v) as string[]} />
+              <VotesPieChart
+                votes={votingPlayers.map((p) => p.vote).filter((v) => !!v) as string[]}
+              />
             ) : (
               <Typography
                 variant="h3"
@@ -208,11 +203,10 @@ const Room = () => {
             <CardPlayer
               key={myPlayer.id}
               showVotes={showVotes}
-              socket={socket}
               activeReactions={activeReactions}
               handleCardClick={() => {}}
               player={myPlayer}
-              roomData={roomData}
+              isMe
             />
           )}
         </Box>
@@ -233,7 +227,16 @@ const Room = () => {
           boxShadow: '0 -5px 20px rgba(0,0,0,0.5)',
         }}
       >
-        {!showVotes && !!myPlayer && <ContainerVotacao sendVote={sendVote} myPlayer={myPlayer} />}
+        {!showVotes && !!myPlayer && !myPlayer.isSpectator && (
+          <ContainerVotacao sendVote={sendVote} myPlayer={myPlayer} />
+        )}
+
+        {!showVotes && myPlayer?.isSpectator && (
+          <Typography color="white" variant="h6" sx={{ opacity: 0.7 }}>
+            Você está observando como espectador
+          </Typography>
+        )}
+
         {showVotes && (
           <Typography color="white" variant="h5" sx={{ fontWeight: 'light' }}>
             Votação Encerrada
@@ -242,10 +245,12 @@ const Room = () => {
       </Box>
 
       <MenuEmoji
-        handleClosePopover={handleClosePopover}
-        handleSendReaction={handleSendReaction}
-        isPopoverOpen={isPopoverOpen}
         anchorEl={anchorEl}
+        onClose={() => {
+          setAnchorEl(null);
+          setSelectedPlayerId(null);
+        }}
+        onSelectEmoji={handleSendReaction}
       />
     </Box>
   );
