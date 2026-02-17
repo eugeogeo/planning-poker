@@ -72,7 +72,8 @@ const VotesPieChart = ({ votes }: VotesPieChartProps) => {
             overflow: 'visible',
           }}
         >
-          <title>Votes distribution pie chart</title>
+          <title>{''}</title>
+
           {data.map((slice, index) => {
             const startPercent = cumulativePercent;
             const [startX, startY] = getCoordinatesForPercent(startPercent);
