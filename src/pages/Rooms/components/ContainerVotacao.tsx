@@ -1,5 +1,6 @@
 import { Box, Button, Typography } from '@mui/material';
 import type { Player } from '../../../@types/general';
+import { CARD_COLORS } from '../../../@types/enum';
 
 const ContainerVotacao = (data: { sendVote: (size: string) => void; myPlayer: Player }) => {
   const TSHIRT_SIZES = ['PP', 'P', 'M', 'G', 'GG', '?'];
@@ -27,12 +28,16 @@ const ContainerVotacao = (data: { sendVote: (size: string) => void; myPlayer: Pl
                 minWidth: 45,
                 height: 65,
                 borderRadius: 1.5,
-                bgcolor: isSelected ? '#ffffff' : 'rgba(255,255,255,0.05)',
+                bgcolor: isSelected
+                  ? CARD_COLORS[size as keyof typeof CARD_COLORS] || '#ffffff'
+                  : 'rgba(255,255,255,0.05)',
                 color: isSelected ? '#000' : '#fff',
+                boxShadow: isSelected
+                  ? `0 0 20px ${CARD_COLORS[size as keyof typeof CARD_COLORS] || '#fff'}`
+                  : 'none',
                 fontWeight: 'bold',
                 fontSize: '1rem',
                 border: isSelected ? '2px solid #fff' : '1px solid rgba(255,255,255,0.3)',
-                boxShadow: isSelected ? '0 0 20px rgba(255,255,255,0.4)' : 'none',
                 transform: isSelected ? 'translateY(-15px)' : 'none',
                 transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 '&:hover': {

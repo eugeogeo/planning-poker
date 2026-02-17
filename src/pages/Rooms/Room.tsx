@@ -8,6 +8,7 @@ import MenuEmoji from './components/MenuEmoji';
 import CardPlayer from './components/CardPlayer';
 import ServerConnect from '../../components/ServerConnect';
 import type { Player, RoomData, ActiveReaction } from '../../@types/general';
+import VotesPieChart from './components/VotesPieChart';
 import {
   emitVote,
   joinRoom,
@@ -177,22 +178,26 @@ const Room = () => {
             zIndex: 1,
           }}
         >
-          <Box sx={{ textAlign: 'center', opacity: 0.6 }}>
-            <Typography
-              variant="h3"
-              sx={{
-                color: 'rgba(0,0,0,0.2)',
-                fontWeight: 'bold',
-                userSelect: 'none',
-                fontFamily: 'serif',
-                letterSpacing: 6,
-              }}
-            >
-              PLANNING
-            </Typography>
+          <Box sx={{ textAlign: 'center', opacity: showVotes ? 1 : 0.6 }}>
+            {showVotes ? (
+              <VotesPieChart votes={players.map((p) => p.vote).filter((v) => !!v) as string[]} />
+            ) : (
+              <Typography
+                variant="h3"
+                sx={{
+                  color: 'rgba(0,0,0,0.2)',
+                  fontWeight: 'bold',
+                  userSelect: 'none',
+                  fontFamily: 'serif',
+                  letterSpacing: 6,
+                }}
+              >
+                PLANNING
+              </Typography>
+            )}
 
             {isAdmin && roomId && (
-              <Box sx={{ mt: 3, transform: 'scale(1.2)' }}>
+              <Box sx={{ mt: showVotes ? 1 : 3, transform: 'scale(1.2)' }}>
                 <AdminArea showVotes={showVotes} allVoted={allVoted} roomId={roomId} />
               </Box>
             )}

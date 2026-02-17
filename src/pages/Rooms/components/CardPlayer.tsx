@@ -1,6 +1,7 @@
 import { Box, keyframes, Paper, Typography } from '@mui/material';
 import type { Socket } from 'socket.io-client';
 import type { ActiveReaction, Player, RoomData } from '../../../@types/general';
+import { CARD_COLORS } from '../../../@types/enum';
 
 const CardPlayer = (data: {
   showVotes: boolean;
@@ -25,15 +26,12 @@ const CardPlayer = (data: {
   const isMe = id === socket.id;
   const hasVoted = !!vote;
 
-  // Lógica de Cores da Carta
-  // 1. Se votação revelada e jogador votou -> Branco (Frente)
-  // 2. Se votação oculta mas jogador votou -> Azul (Verso)
-  // 3. Se não votou -> Transparente
   const getCardBackground = () => {
-    if (showVotes && hasVoted) return '#eceff1';
+    if (showVotes && hasVoted) {
+      return CARD_COLORS[vote as keyof typeof CARD_COLORS] || '#eceff1';
+    }
 
     if (hasVoted) return '#1565c0';
-
     return 'rgba(255, 255, 255, 0.05)';
   };
 
