@@ -1,4 +1,4 @@
-import { BrowserRouter } from 'react-router-dom'; // Importe isso
+import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { SocketProvider } from './context/SocketContext';
 import { createRoot } from 'react-dom/client';

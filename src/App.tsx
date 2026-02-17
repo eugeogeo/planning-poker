@@ -1,17 +1,18 @@
-import { Route, Routes } from 'react-router-dom';
-import Home from './pages/Home/Home';
-import Room from './pages/Rooms/Room';
+import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import AppRoutes from './pages/routes'; // Importa as rotas que acabamos de corrigir
 
-// Componentes temporários (se você ainda não criou os reais)
-const NotFound = () => <h1>404 - Página não encontrada</h1>;
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+  },
+});
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/room/:roomId" element={<Room />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <AppRoutes />
+    </ThemeProvider>
   );
 }
 
