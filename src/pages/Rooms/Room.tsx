@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSocket } from '../../context/SocketContext';
 import AdminArea from './components/AdminArea';
+import AdminControls from './components/AdminControls'; // <--- Importe o novo componente
 import ContainerVotacao from './components/ContainerVotacao';
 import MenuEmoji from './components/MenuEmoji';
 import CardPlayer from './components/CardPlayer';
@@ -26,8 +27,6 @@ const Room = () => {
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-
-  // Estado para armazenar as reações que estão acontecendo na tela
   const [activeReactions, setActiveReactions] = useState<ActiveReaction[]>([]);
 
   useEffect(() => {
@@ -43,16 +42,12 @@ const Room = () => {
       setRoomData(data);
     };
 
-    // Escuta quando alguém envia uma reação
     const handleReceiveReaction = (data: { targetPlayerId: string; emoji: string }) => {
-      const reactionId = Math.random().toString(36).substring(7); // ID único para a animação
-
+      const reactionId = Math.random().toString(36).substring(7);
       setActiveReactions((prev) => [
         ...prev,
         { id: reactionId, playerId: data.targetPlayerId, emoji: data.emoji },
       ]);
-
-      // Remove a reação do estado após a animação terminar (2 segundos)
       setTimeout(() => {
         setActiveReactions((prev) => prev.filter((r) => r.id !== reactionId));
       }, 2000);
@@ -75,7 +70,6 @@ const Room = () => {
 
   // --- LÓGICA DE REAÇÃO (EMOJIS) ---
   const handleCardClick = (event: React.MouseEvent<HTMLElement>, playerId: string) => {
-    // Só abre o popover se o card não for do próprio usuário logado
     if (playerId !== socket.id) {
       setAnchorEl(event.currentTarget);
       setSelectedPlayerId(playerId);
@@ -91,7 +85,6 @@ const Room = () => {
     if (selectedPlayerId && roomId) {
       sendReaction({ roomId, targetPlayerId: selectedPlayerId, emoji });
     }
-
     handleClosePopover();
   };
 
@@ -110,7 +103,7 @@ const Room = () => {
         width: '100vw',
         height: '100vh',
         bgcolor: '#121212',
-        backgroundImage: 'radial-gradient(circle at center, #2c3e50 0%, #000000 100%)', // Gradiente ambiente
+        backgroundImage: 'radial-gradient(circle at center, #2c3e50 0%, #000000 100%)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -125,6 +118,12 @@ const Room = () => {
         </Typography>
         <ServerConnect isConnected={isConnected} />
       </Box>
+
+      {isAdmin && roomId && (
+        <Box sx={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
+          <AdminControls roomId={roomId} />
+        </Box>
+      )}
 
       <Box
         sx={{
@@ -169,7 +168,7 @@ const Room = () => {
             bgcolor: '#2e7d32',
             borderRadius: '200px',
             border: '12px solid #5d4037',
-            boxShadow: 'inset 0 0 60px rgba(0,0,0,0.6), 0 20px 50px rgba(0,0,0,0.5)', // Sombras internas e externas
+            boxShadow: 'inset 0 0 60px rgba(0,0,0,0.6), 0 20px 50px rgba(0,0,0,0.5)',
             position: 'relative',
             display: 'flex',
             alignItems: 'center',
