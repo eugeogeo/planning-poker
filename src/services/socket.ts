@@ -14,11 +14,11 @@ const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 export const socket = io(SOCKET_URL, { transports: ['websocket'] });
 
 export function createRoom(data: CreateRoom) {
-  const { playerName, setIsLoading, setErrorMsg, navigate } = data;
+  const { playerName, setIsLoading, setErrorMsg, navigate, isSpectator } = data;
 
   return socket.emit(
     'create_room',
-    { playerName: playerName.trim(), roomType: 'T-shirt' },
+    { playerName: playerName.trim(), roomType: 'T-shirt', isSpectator },
     (response?: RoomResponse) => {
       setIsLoading(false);
       if (response?.success) {
@@ -31,13 +31,14 @@ export function createRoom(data: CreateRoom) {
 }
 
 export function joinRoom(data: JoinRoom) {
-  const { playerName, inputRoomId, setIsLoading, setErrorMsg, navigate } = data;
+  const { playerName, inputRoomId, setIsLoading, setErrorMsg, navigate, isSpectator } = data;
 
   socket.emit(
     'join_room',
     {
       playerName: playerName.trim(),
       roomId: inputRoomId.trim().toUpperCase(),
+      isSpectator,
     },
     (response: RoomResponse) => {
       setIsLoading?.(false);

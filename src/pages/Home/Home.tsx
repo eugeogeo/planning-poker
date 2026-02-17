@@ -37,6 +37,7 @@ const Home = () => {
       setErrorMsg('');
       setIsLoading(true);
       localStorage.setItem('playerName', playerName.trim());
+      localStorage.setItem('isSpectator', isSpectator ? 'true' : 'false');
       createRoom({ playerName, isSpectator, setIsLoading, setErrorMsg, navigate });
     }
   };
@@ -50,6 +51,7 @@ const Home = () => {
       setErrorMsg('');
       setIsLoading(true);
       localStorage.setItem('playerName', playerName.trim());
+      localStorage.setItem('isSpectator', isSpectator ? 'true' : 'false');
       joinRoom({ playerName, inputRoomId, isSpectator, setIsLoading, setErrorMsg, navigate });
     }
   };

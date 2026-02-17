@@ -32,7 +32,10 @@ const Room = () => {
   useEffect(() => {
     if (isConnected && roomId) {
       const playerName = localStorage.getItem('playerName') || 'Jogador Anônimo';
-      joinRoom({ inputRoomId: roomId, playerName });
+
+      const isSpectator = localStorage.getItem('isSpectator') === 'true';
+
+      joinRoom({ inputRoomId: roomId, playerName, isSpectator });
     }
   }, [isConnected, roomId]);
 
@@ -63,7 +66,11 @@ const Room = () => {
   }, []);
 
   const sendVote = (vote: string) => {
-    if (!roomData?.showVotes && roomId) {
+    if (roomData?.showVotes || myPlayer?.isSpectator) {
+      return;
+    }
+
+    if (roomId) {
       emitVote({ roomId: roomId, vote });
     }
   };

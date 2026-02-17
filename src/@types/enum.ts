@@ -1,8 +1,10 @@
-export const CARD_COLORS: Record<string, string> = {
-  PP: '#90a4ae',
-  P: '#4caf50',
-  M: '#2196f3',
-  G: '#ffc107',
-  GG: '#ff5722',
-  '?': '#9c27b0',
-};
+export const CARD_VALUES = ['PP', 'P', 'M', 'G', 'GG', '?'] as const;
+
+export const CARD_COLORS = {
+  PP: '#81c784', // Verde claro
+  P: '#4caf50', // Verde
+  M: '#2196f3', // Azul
+  G: '#ff9800', // Laranja
+  GG: '#f44336', // Vermelho
+  '?': '#9e9e9e', // Cinzento
+} as const;

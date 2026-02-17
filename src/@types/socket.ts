@@ -2,19 +2,19 @@ import type { RoomData } from './general';
 
 export type CreateRoom = {
   playerName: string;
+  isSpectator: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   setErrorMsg: React.Dispatch<React.SetStateAction<string>>;
   navigate: (path: string) => void;
-  isSpectator?: boolean;
 };
 
 export type JoinRoom = {
   playerName: string;
   inputRoomId: string;
+  isSpectator: boolean;
   setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
   setErrorMsg?: React.Dispatch<React.SetStateAction<string>>;
   navigate?: (path: string) => void;
-  isSpectator?: boolean;
 };
 
 export type UpdateRoom = { handleRoomUpdate: (data: RoomData) => void };
