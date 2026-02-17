@@ -1,4 +1,4 @@
-import { Box, Grid, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSocket } from '../../context/SocketContext';
@@ -101,41 +101,148 @@ const Room = () => {
   const isPopoverOpen = Boolean(anchorEl);
 
   const myPlayer = players.find((p) => p.id === socket.id);
+  const otherPlayers = players.filter((p) => p.id !== socket.id);
 
   return (
-    <Box sx={{ p: 4, textAlign: 'center' }}>
-      <Typography variant="h5" sx={{ mb: 4 }}>
-        Sala: {roomId} {isAdmin && '👑'}
-      </Typography>
+    <Box
+      sx={{
+        width: '100vw',
+        height: '100vh',
+        bgcolor: '#121212',
+        backgroundImage: 'radial-gradient(circle at center, #2c3e50 0%, #000000 100%)', // Gradiente ambiente
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        overflow: 'hidden',
+        position: 'relative',
+        color: 'white',
+      }}
+    >
+      <Box sx={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', opacity: 0.8 }}>
+          Sala: {roomId}
+        </Typography>
+        <ServerConnect isConnected={isConnected} />
+      </Box>
 
-      <ServerConnect isConnected={isConnected} />
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          perspective: '1000px',
+          pb: 12,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            mb: -3,
+            zIndex: 2,
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            maxWidth: '90%',
+          }}
+        >
+          {otherPlayers.map((p) => (
+            <CardPlayer
+              key={p.id}
+              showVotes={showVotes}
+              socket={socket}
+              activeReactions={activeReactions}
+              handleCardClick={handleCardClick}
+              player={p}
+              roomData={roomData}
+            />
+          ))}
+        </Box>
 
-      {/* Grid de Jogadores */}
-      <Grid container spacing={2} justifyContent="center" sx={{ mb: 6 }}>
-        {players.map((p) => (
-          <CardPlayer
-            key={p.id}
-            showVotes={showVotes}
-            socket={socket}
-            activeReactions={activeReactions}
-            handleCardClick={handleCardClick}
-            player={p}
-            roomData={roomData}
-          />
-        ))}
-      </Grid>
+        <Box
+          sx={{
+            width: 'min(95%, 900px)',
+            height: '350px',
+            bgcolor: '#2e7d32',
+            borderRadius: '200px',
+            border: '12px solid #5d4037',
+            boxShadow: 'inset 0 0 60px rgba(0,0,0,0.6), 0 20px 50px rgba(0,0,0,0.5)', // Sombras internas e externas
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            zIndex: 1,
+          }}
+        >
+          <Box sx={{ textAlign: 'center', opacity: 0.6 }}>
+            <Typography
+              variant="h3"
+              sx={{
+                color: 'rgba(0,0,0,0.2)',
+                fontWeight: 'bold',
+                userSelect: 'none',
+                fontFamily: 'serif',
+                letterSpacing: 6,
+              }}
+            >
+              PLANNING
+            </Typography>
 
-      {/* Popover (Menu de Emojis) */}
+            {isAdmin && roomId && (
+              <Box sx={{ mt: 3, transform: 'scale(1.2)' }}>
+                <AdminArea showVotes={showVotes} allVoted={allVoted} roomId={roomId} />
+              </Box>
+            )}
+          </Box>
+        </Box>
+
+        <Box sx={{ mt: -5, zIndex: 3 }}>
+          {myPlayer && (
+            <CardPlayer
+              key={myPlayer.id}
+              showVotes={showVotes}
+              socket={socket}
+              activeReactions={activeReactions}
+              handleCardClick={() => {}}
+              player={myPlayer}
+              roomData={roomData}
+            />
+          )}
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          width: '100%',
+          p: 2,
+          bgcolor: 'rgba(20, 20, 20, 0.8)',
+          backdropFilter: 'blur(10px)',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          display: 'flex',
+          justifyContent: 'center',
+          position: 'fixed',
+          bottom: 0,
+          zIndex: 20,
+          boxShadow: '0 -5px 20px rgba(0,0,0,0.5)',
+        }}
+      >
+        {!showVotes && !!myPlayer && <ContainerVotacao sendVote={sendVote} myPlayer={myPlayer} />}
+        {showVotes && (
+          <Typography color="white" variant="h5" sx={{ fontWeight: 'light' }}>
+            Votação Encerrada
+          </Typography>
+        )}
+      </Box>
+
       <MenuEmoji
         handleClosePopover={handleClosePopover}
         handleSendReaction={handleSendReaction}
         isPopoverOpen={isPopoverOpen}
         anchorEl={anchorEl}
       />
-
-      {!showVotes && !!myPlayer && <ContainerVotacao sendVote={sendVote} myPlayer={myPlayer} />}
-
-      {isAdmin && roomId && <AdminArea showVotes={showVotes} allVoted={allVoted} roomId={roomId} />}
     </Box>
   );
 };
