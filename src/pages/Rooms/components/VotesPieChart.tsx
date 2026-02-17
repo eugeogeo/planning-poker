@@ -64,7 +64,7 @@ const VotesPieChart = ({ votes }: VotesPieChartProps) => {
 
       <Box sx={{ position: 'relative', width: 140, height: 140 }}>
         <svg
-          viewBox="-1.1 -1.1 2.2 2.2" // Aumentado levemente para não cortar o "salto"
+          viewBox="-1.1 -1.1 2.2 2.2"
           style={{
             transform: 'rotate(-90deg)',
             width: '100%',
