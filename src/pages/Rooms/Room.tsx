@@ -76,6 +76,10 @@ const Room = () => {
   };
 
   const handleCardClick = (event: React.MouseEvent<HTMLElement>, playerId: string) => {
+    if (myPlayer?.isSpectator) {
+      return;
+    }
+
     if (playerId !== socket.id) {
       setAnchorEl(event.currentTarget);
       setSelectedPlayerId(playerId);
@@ -83,6 +87,12 @@ const Room = () => {
   };
 
   const handleSendReaction = (emoji: string) => {
+    if (myPlayer?.isSpectator) {
+      setAnchorEl(null);
+      setSelectedPlayerId(null);
+      return;
+    }
+
     if (selectedPlayerId && roomId) {
       sendReaction({ roomId, targetPlayerId: selectedPlayerId, emoji });
     }
@@ -93,11 +103,11 @@ const Room = () => {
   const isAdmin = roomData?.adminId === socket.id;
   const showVotes = roomData?.showVotes || false;
 
-  const votingPlayers = players.filter((p) => !p.isSpectator);
-  const allVoted = votingPlayers.length > 0 && votingPlayers.every((p) => p.vote !== null);
-
   const myPlayer = players.find((p) => p.id === socket.id);
-  const otherPlayers = players.filter((p) => p.id !== socket.id);
+  const votingPlayers = players.filter((p) => !p.isSpectator);
+  const spectatorPlayers = players.filter((p) => p.isSpectator);
+  const tablePlayers = votingPlayers.filter((p) => p.id !== socket.id);
+  const allVoted = votingPlayers.length > 0 && votingPlayers.every((p) => p.vote !== null);
 
   return (
     <Box
@@ -129,6 +139,52 @@ const Room = () => {
 
       <Box
         sx={{
+          position: 'absolute',
+          top: 90,
+          right: 20,
+          zIndex: 10,
+          width: { xs: 180, md: 220 },
+          maxHeight: '50vh',
+          overflowY: 'auto',
+          p: 2,
+          borderRadius: 2,
+          bgcolor: 'rgba(0,0,0,0.35)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          backdropFilter: 'blur(6px)',
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ opacity: 0.8, mb: 1 }}>
+          Espectadores ({spectatorPlayers.length})
+        </Typography>
+
+        {spectatorPlayers.length === 0 && (
+          <Typography variant="body2" sx={{ opacity: 0.6 }}>
+            Nenhum espectador
+          </Typography>
+        )}
+
+        {spectatorPlayers.map((spectator) => (
+          <Typography
+            key={spectator.id}
+            variant="body2"
+            sx={{
+              py: 0.5,
+              px: 1,
+              mb: 0.5,
+              borderRadius: 1,
+              bgcolor: spectator.id === socket.id ? 'rgba(52,152,219,0.25)' : 'rgba(255,255,255,0.08)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {spectator.name} {spectator.id === socket.id ? '(Você)' : ''}
+          </Typography>
+        ))}
+      </Box>
+
+      <Box
+        sx={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
@@ -150,12 +206,13 @@ const Room = () => {
             maxWidth: '90%',
           }}
         >
-          {otherPlayers.map((p) => (
+          {tablePlayers.map((p) => (
             <CardPlayer
               key={p.id}
               showVotes={showVotes}
               activeReactions={activeReactions}
               handleCardClick={handleCardClick}
+              canReact={!myPlayer?.isSpectator}
               player={p}
             />
           ))}
@@ -206,7 +263,7 @@ const Room = () => {
         </Box>
 
         <Box sx={{ mt: -5, zIndex: 3 }}>
-          {myPlayer && (
+          {myPlayer && !myPlayer.isSpectator && (
             <CardPlayer
               key={myPlayer.id}
               showVotes={showVotes}

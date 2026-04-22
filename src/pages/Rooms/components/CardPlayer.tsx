@@ -9,6 +9,7 @@ interface CardPlayerProps {
   activeReactions: ActiveReaction[];
   handleCardClick: (event: React.MouseEvent<HTMLElement>, playerId: string) => void;
   isMe?: boolean;
+  canReact?: boolean;
 }
 
 const CardPlayer = ({
@@ -17,6 +18,7 @@ const CardPlayer = ({
   activeReactions,
   handleCardClick,
   isMe = false,
+  canReact = true,
 }: CardPlayerProps) => {
   const currentReactions = activeReactions.filter((r) => r.playerId === player.id);
 
@@ -84,7 +86,7 @@ const CardPlayer = ({
           </Typography>
         )}
 
-        {!isMe && (
+        {!isMe && canReact && (
           <IconButton
             size="small"
             sx={{
